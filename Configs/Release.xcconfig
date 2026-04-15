@@ -1,0 +1,3 @@
+// Release build configuration
+// Local.xcconfig is optional — create it to set your signing team
+#include? "Local.xcconfig"

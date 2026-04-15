@@ -1,0 +1,18 @@
+# Xcode
+build/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+xcuserdata/
+*.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+
+# Local signing configuration (contains team ID)
+Configs/Local.xcconfig
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# Archives
+*.xcarchive
