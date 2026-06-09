@@ -1,0 +1,17 @@
+{
+  "name": "restnot",
+  "owner": { "name": "katlab", "email": "nejc@katlab.dev" },
+  "description": "RestNot — process- and agent-aware sleep prevention for macOS.",
+  "plugins": [
+    {
+      "name": "restnot",
+      "source": "./",
+      "description": "Keeps your Mac awake while a Claude Code agent is actively working, and lets it sleep when the agent goes idle.",
+      "version": "0.1.0",
+      "author": { "name": "katlab" },
+      "homepage": "https://github.com/nejc-katlab/restnot",
+      "license": "MIT",
+      "keywords": ["macos", "sleep", "caffeinate", "hooks", "automation"]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "restnot",
+  "displayName": "RestNot",
+  "description": "Keeps your Mac awake while a Claude Code agent is actively working, and lets it sleep when the agent goes idle.",
+  "version": "0.1.0",
+  "author": { "name": "katlab", "email": "nejc@katlab.dev" },
+  "homepage": "https://github.com/nejc-katlab/restnot",
+  "repository": "https://github.com/nejc-katlab/restnot",
+  "license": "MIT",
+  "keywords": ["macos", "sleep", "caffeinate", "hooks", "automation"]
+}

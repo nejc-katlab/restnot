@@ -1,18 +1,25 @@
 import AppKit
 
+struct ActiveItem {
+    let key: String
+    let display: String
+}
+
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var processWatcher: ProcessWatcher!
+    private var leaseWatcher: LeaseWatcher!
     private var sleepManager: SleepManager!
     private var pollTimer: Timer?
     private var graceTimer: Timer?
-    private var activeProcesses: [WatchedProcess] = []
-    private var processStartTimes: [String: Date] = [:]
+    private var activeItems: [ActiveItem] = []
+    private var startTimes: [String: Date] = [:]
     private var isPaused = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         sleepManager = SleepManager()
         processWatcher = ProcessWatcher()
+        leaseWatcher = LeaseWatcher()
         setupStatusItem()
         startPolling()
     }
@@ -39,29 +46,36 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func poll() {
         guard !isPaused else { return }
 
-        let matches = processWatcher.scan()
+        var items: [ActiveItem] = []
 
-        let currentKeys = Set(matches.map { $0.displayName })
-        let previousKeys = Set(processStartTimes.keys)
+        for lease in leaseWatcher.activeLeases() {
+            let short = String(lease.sessionId.prefix(8))
+            items.append(ActiveItem(key: "claude:\(lease.sessionId)", display: "Claude Code (\(short))"))
+        }
 
+        var seen = Set<String>()
+        for proc in processWatcher.scan() where seen.insert(proc.displayName).inserted {
+            items.append(ActiveItem(key: "proc:\(proc.displayName)", display: proc.displayName))
+        }
+
+        items.sort { $0.display < $1.display }
+
+        let currentKeys = Set(items.map { $0.key })
+        let previousKeys = Set(startTimes.keys)
         for key in currentKeys.subtracting(previousKeys) {
-            processStartTimes[key] = Date()
+            startTimes[key] = Date()
         }
         for key in previousKeys.subtracting(currentKeys) {
-            processStartTimes.removeValue(forKey: key)
+            startTimes.removeValue(forKey: key)
         }
 
-        // Deduplicate by display name for the menu
-        var seenNames = Set<String>()
-        activeProcesses = matches.filter { seenNames.insert($0.displayName).inserted }
+        activeItems = items
 
-        if !matches.isEmpty {
+        if !items.isEmpty {
             graceTimer?.invalidate()
             graceTimer = nil
 
-            // Deduplicate by display name for the assertion reason
-            let uniqueNames = Array(Set(matches.map { $0.displayName })).sorted()
-            let reason = uniqueNames.prefix(5).joined(separator: ", ")
+            let reason = items.prefix(5).map { $0.display }.joined(separator: ", ")
             sleepManager.assertIfNeeded(reason: reason)
             updateIcon(active: true)
         } else if sleepManager.isHolding {
@@ -82,7 +96,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func updateIcon(active: Bool) {
         guard let button = statusItem.button else { return }
         let symbolName = active ? "moon.zzz.fill" : "moon.zzz"
-        button.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "RestNot")
+        let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "RestNot")
+        image?.isTemplate = true
+        button.image = image
+        button.contentTintColor = active ? .systemGreen : nil
     }
 
     private func updateMenu() {
@@ -92,21 +109,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let item = NSMenuItem(title: "Paused", action: nil, keyEquivalent: "")
             item.isEnabled = false
             menu.addItem(item)
-        } else if !activeProcesses.isEmpty {
+        } else if !activeItems.isEmpty {
             let header = NSMenuItem(title: "Preventing Sleep", action: nil, keyEquivalent: "")
             header.isEnabled = false
             menu.addItem(header)
             menu.addItem(NSMenuItem.separator())
 
-            for process in activeProcesses {
-                let duration = formatDuration(since: processStartTimes[process.displayName])
-                let title = "  \(process.displayName) — \(duration)"
-                let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-                item.isEnabled = false
-                menu.addItem(item)
+            for item in activeItems {
+                let duration = formatDuration(since: startTimes[item.key])
+                let title = "  \(item.display) — \(duration)"
+                let menuItem = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+                menuItem.isEnabled = false
+                menu.addItem(menuItem)
             }
         } else {
-            let item = NSMenuItem(title: "No active processes", action: nil, keyEquivalent: "")
+            let item = NSMenuItem(title: "Idle — sleep allowed", action: nil, keyEquivalent: "")
             item.isEnabled = false
             menu.addItem(item)
         }

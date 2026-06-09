@@ -17,21 +17,40 @@ macOS aggressively sleeps when the lid closes or after idle timeout. If you're r
 
 ## How It Works
 
-RestNot runs as a lightweight menu bar app. Every 5 seconds, it scans running processes against a watchlist. When a match is found, it creates a macOS power assertion (`IOPMAssertion`) to prevent system sleep. When all watched processes end, it waits a 30-second grace period, then releases the hold.
+RestNot runs as a lightweight menu bar app and keeps the Mac awake from two signals:
+
+1. **Claude Code hooks (primary).** A tiny hook script fires on every Claude Code event and writes a short-lived *lease* file. RestNot holds a sleep assertion while any lease is unexpired. This tracks when an agent is *actually working* — not just whether the `claude` process is running (it runs all the time, even idle, which would otherwise keep your Mac awake all night).
+2. **Process watchlist (fallback).** Every 5 seconds it also scans for long-running work where no hook fires — builds, SSH, file transfers.
+
+When either signal is active it creates a macOS power assertion (`IOPMAssertion`). When everything goes idle, it waits a 30-second grace period, then releases the hold and the Mac follows its normal sleep settings.
 
 ```
-Process detected → Sleep prevented → Process ends → Grace period → Sleep re-enabled
+Agent works (hook) ─┐
+                    ├─→ Sleep prevented → Idle → Grace period → Sleep re-enabled
+Build runs (process)┘
 ```
 
-No configuration needed. No manual toggling. No lost work.
+### Claude Code integration
 
-## Default Watchlist
+Claude detection is driven by hooks so the Mac stays awake **only while an agent is actively working** and sleeps once a turn finishes. The hooks ship as a Claude Code plugin — install it with two commands, no config editing:
 
-RestNot ships with built-in rules for common developer tools:
+```
+/plugin marketplace add nejc-katlab/restnot
+/plugin install restnot@restnot
+```
+
+That's it — the hooks register automatically (and merge with any hooks you already have). The plugin bundles the lease script, so there's nothing else to copy.
+
+> **Manual alternative (no plugin):** copy `hooks/restnot-hook.sh` somewhere executable and merge [`hooks/settings.example.json`](hooks/settings.example.json) into your `~/.claude/settings.json` `hooks` block.
+
+**How the lease works:** "busy" events (`UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Notification`) push the lease expiry to `now + 15 min`; `Stop` and `SessionEnd` remove it. The 15-minute TTL (override with `RESTNOT_BUSY_TTL`) is a safety net — if Claude Code crashes mid-turn and never fires `Stop`, the lease still expires, so the Mac can never get stuck awake. Each session gets its own lease, so concurrent sessions are tracked independently.
+
+## Process Watchlist
+
+For long-running work that doesn't emit hooks, RestNot ships with built-in rules:
 
 | Process | Match | Description |
 |---------|-------|-------------|
-| `claude` | Any instance | Claude Code (AI coding agent) |
 | `ssh` | Any instance | SSH connections |
 | `rsync` | Any instance | File synchronization |
 | `scp` | Any instance | Secure file copy |
@@ -47,7 +66,7 @@ RestNot ships with built-in rules for common developer tools:
 Requires Xcode 15+ and macOS 13+.
 
 ```bash
-git clone https://github.com/Mythic-Studio/restnot.git
+git clone https://github.com/nejc-katlab/restnot.git
 cd restnot
 ```
 

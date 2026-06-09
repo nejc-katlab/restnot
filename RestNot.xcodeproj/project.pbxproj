@@ -13,6 +13,7 @@
 		3137D2D9AF44A6C2F8B3AE95 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A291B4F6C98153DB6179159 /* main.swift */; };
 		490EEB7701B1790DA1D45E35 /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA8D505BAB9AB0C2D2BB53EA /* Config.swift */; };
 		6BFB89F9A2DB8CEC845816D7 /* Privacy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C2E24ABE680C5F7E496B510 /* Privacy.swift */; };
+		A940CBADDB04ED4209F02084 /* LeaseWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 816656C7675B7244C02E744B /* LeaseWatcher.swift */; };
 		B3BBA1394091C420B665902A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D355CA04893185BB0B6D1EA /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
@@ -21,6 +22,7 @@
 		1C2E24ABE680C5F7E496B510 /* Privacy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Privacy.swift; sourceTree = "<group>"; };
 		2D355CA04893185BB0B6D1EA /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		4D845984402DF5520F9A9FC4 /* ProcessWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessWatcher.swift; sourceTree = "<group>"; };
+		816656C7675B7244C02E744B /* LeaseWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaseWatcher.swift; sourceTree = "<group>"; };
 		8A291B4F6C98153DB6179159 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		C8446980EABC4BFAEEC7D29F /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		CC6E7C7127ECB0E17DF607EF /* RestNot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RestNot.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -62,6 +64,7 @@
 			children = (
 				2D355CA04893185BB0B6D1EA /* AppDelegate.swift */,
 				FA8D505BAB9AB0C2D2BB53EA /* Config.swift */,
+				816656C7675B7244C02E744B /* LeaseWatcher.swift */,
 				8A291B4F6C98153DB6179159 /* main.swift */,
 				1C2E24ABE680C5F7E496B510 /* Privacy.swift */,
 				4D845984402DF5520F9A9FC4 /* ProcessWatcher.swift */,
@@ -151,6 +154,7 @@
 			files = (
 				B3BBA1394091C420B665902A /* AppDelegate.swift in Sources */,
 				490EEB7701B1790DA1D45E35 /* Config.swift in Sources */,
+				A940CBADDB04ED4209F02084 /* LeaseWatcher.swift in Sources */,
 				6BFB89F9A2DB8CEC845816D7 /* Privacy.swift in Sources */,
 				1A2E0E1A31D4F836ABDE5DF2 /* ProcessWatcher.swift in Sources */,
 				2642EAEA5B71BD547DBF19BA /* SleepManager.swift in Sources */,

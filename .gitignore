@@ -16,3 +16,6 @@ Configs/Local.xcconfig
 
 # Archives
 *.xcarchive
+
+# Local Claude Code config
+.claude/

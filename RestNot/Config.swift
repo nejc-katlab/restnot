@@ -33,11 +33,11 @@ struct Config {
     static let pollInterval: TimeInterval = 5.0
     static let gracePeriod: TimeInterval = 30.0
 
+    // Claude Code is tracked via hooks (see hooks/restnot-hook.sh), not process
+    // matching — the `claude` process runs even while idle, which would keep the
+    // Mac awake all night. These rules cover long-running work where no hook
+    // fires (e.g. a single multi-minute build invoked by an agent).
     static let defaultWatchRules: [WatchRule] = [
-        // Claude Code — any running instance
-        WatchRule(processName: "claude", argPatterns: [], matchMode: .nameOnly, displayAs: nil, enabled: true),
-        // Claude Code via npm (node process running claude)
-        WatchRule(processName: "node", argPatterns: ["claude"], matchMode: .nameAndArgs, displayAs: "claude", enabled: true),
         // SSH & file transfers
         WatchRule(processName: "ssh", argPatterns: [], matchMode: .nameOnly, displayAs: nil, enabled: true),
         WatchRule(processName: "rsync", argPatterns: [], matchMode: .nameOnly, displayAs: nil, enabled: true),
