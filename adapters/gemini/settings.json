@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "BeforeAgent": [
+      { "hooks": [{ "type": "command", "command": "~/.restnot/adapters/restnot-agent-hook.sh gemini busy" }] }
+    ],
+    "BeforeTool": [
+      { "hooks": [{ "type": "command", "command": "~/.restnot/adapters/restnot-agent-hook.sh gemini busy" }] }
+    ],
+    "AfterAgent": [
+      { "hooks": [{ "type": "command", "command": "~/.restnot/adapters/restnot-agent-hook.sh gemini stop" }] }
+    ],
+    "SessionEnd": [
+      { "hooks": [{ "type": "command", "command": "~/.restnot/adapters/restnot-agent-hook.sh gemini stop" }] }
+    ]
+  }
+}

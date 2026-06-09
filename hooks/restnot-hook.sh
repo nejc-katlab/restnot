@@ -39,7 +39,9 @@ case "$event" in
     rm -f "$lease_file"
     ;;
   *)
-    printf '%s' "$(( $(date +%s) + BUSY_TTL ))" > "$lease_file"
+    tmp="$(mktemp "${LEASE_DIR}/.${session}.XXXXXX")"
+    printf '%s' "$(( $(date +%s) + BUSY_TTL ))" > "$tmp"
+    mv -f "$tmp" "$lease_file"
     ;;
 esac
 

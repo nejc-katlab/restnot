@@ -24,6 +24,8 @@ RestNot runs as a lightweight menu bar app and keeps the Mac awake from two sign
 
 When either signal is active it creates a macOS power assertion (`IOPMAssertion`). When everything goes idle, it waits a 30-second grace period, then releases the hold and the Mac follows its normal sleep settings.
 
+RestNot uses `PreventSystemSleep`, so it keeps the Mac awake **even with the lid closed** — on AC power, or on battery with an external display attached (clamshell mode). On battery with no external display, macOS overrides all apps and sleeps on lid-close; that's a hardware-level policy RestNot can't bypass.
+
 ```
 Agent works (hook) ─┐
                     ├─→ Sleep prevented → Idle → Grace period → Sleep re-enabled
@@ -44,6 +46,35 @@ That's it — the hooks register automatically (and merge with any hooks you alr
 > **Manual alternative (no plugin):** copy `hooks/restnot-hook.sh` somewhere executable and merge [`hooks/settings.example.json`](hooks/settings.example.json) into your `~/.claude/settings.json` `hooks` block.
 
 **How the lease works:** "busy" events (`UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Notification`) push the lease expiry to `now + 15 min`; `Stop` and `SessionEnd` remove it. The 15-minute TTL (override with `RESTNOT_BUSY_TTL`) is a safety net — if Claude Code crashes mid-turn and never fires `Stop`, the lease still expires, so the Mac can never get stuck awake. Each session gets its own lease, so concurrent sessions are tracked independently.
+
+### Other agents (Codex, Gemini, Cursor — agent-agnostic)
+
+RestNot's macOS side only watches the lease directory, so **any** agentic CLI can drive it. A generic adapter bridges each tool's hook system to the lease CLI:
+
+```
+adapters/restnot-agent-hook.sh <tool> busy   # on turn-start / tool-use
+adapters/restnot-agent-hook.sh <tool> stop   # on turn-end / session-end
+```
+
+Ready-made configs ship under `adapters/`:
+
+| Tool | Config to merge | Events used |
+|------|-----------------|-------------|
+| Codex CLI | [`adapters/codex/hooks.json`](adapters/codex/hooks.json) | UserPromptSubmit, PreToolUse, PostToolUse, Stop |
+| Gemini CLI | [`adapters/gemini/settings.json`](adapters/gemini/settings.json) | BeforeAgent, BeforeTool, AfterAgent, SessionEnd |
+| Cursor | [`adapters/cursor/hooks.json`](adapters/cursor/hooks.json) | beforeSubmitPrompt, beforeShellExecution, stop, sessionEnd |
+
+Copy `bin/restnot` and `adapters/` to `~/.restnot/` and merge the relevant config into the tool's hook settings. Each session gets its own lease keyed by `<tool>-<session_id>`, so concurrent sessions across different tools are tracked independently.
+
+### Lease CLI
+
+`bin/restnot` is a standalone lease manager — use it from anything (a script, a cron job, your own tooling):
+
+```bash
+restnot lease <id> [--ttl 900]   # hold a lease (default TTL 900s)
+restnot release <id>             # drop it
+restnot list                     # show active leases
+```
 
 ## Process Watchlist
 
@@ -101,9 +132,9 @@ RestNot lives in your menu bar with two states:
 | State | Icon | Meaning |
 |-------|------|---------|
 | Idle | 🌙 | No watched processes running |
-| Active | 🌙 (filled) | Preventing sleep — processes listed in menu |
+| Active | 🌙 (green) | Preventing sleep — agents/processes listed in menu |
 
-Click the icon to see which processes are active and how long they've been running. You can pause and resume RestNot from the menu.
+When sleep is being prevented the icon turns **green** so you can tell at a glance that an agent or process is registered. Click the icon to see which agents/processes are active and how long they've been running. You can pause and resume RestNot from the menu, and toggle **Open at Login** — enabled automatically on first launch so it's a one-time install.
 
 ## Privacy
 
@@ -141,10 +172,11 @@ The core scanning logic is ~200 lines of Swift, fully auditable in [`RestNot/Pro
 
 ## Roadmap
 
+- [x] Launch at login
+- [x] CLI companion (`restnot lease/release/list`)
+- [x] Agent-agnostic adapters (Codex, Gemini, Cursor)
 - [ ] Configurable watchlist via settings UI
 - [ ] Native notifications on sleep prevent/release
-- [ ] Launch at login
-- [ ] CLI companion (`restnot status`, `restnot wrap -- <command>`)
 - [ ] Battery safety (release on low battery)
 - [ ] Session history (opt-in)
 - [ ] Homebrew formula

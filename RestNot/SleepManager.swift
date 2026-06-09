@@ -11,13 +11,14 @@ class SleepManager {
 
         if isHolding {
             guard reason != currentReason else { return }
-            IOPMAssertionSetProperty(assertionID, kIOPMAssertionNameKey as CFString, reasonStr)
-            currentReason = reason
+            if IOPMAssertionSetProperty(assertionID, kIOPMAssertionNameKey as CFString, reasonStr) == kIOReturnSuccess {
+                currentReason = reason
+            }
             return
         }
 
         let result = IOPMAssertionCreateWithName(
-            kIOPMAssertPreventUserIdleSystemSleep as CFString,
+            kIOPMAssertionTypePreventSystemSleep as CFString,
             IOPMAssertionLevel(kIOPMAssertionLevelOn),
             reasonStr,
             &assertionID

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeSubmitPrompt": [
+      { "command": "~/.restnot/adapters/restnot-agent-hook.sh cursor busy" }
+    ],
+    "beforeShellExecution": [
+      { "command": "~/.restnot/adapters/restnot-agent-hook.sh cursor busy" }
+    ],
+    "stop": [
+      { "command": "~/.restnot/adapters/restnot-agent-hook.sh cursor stop" }
+    ],
+    "sessionEnd": [
+      { "command": "~/.restnot/adapters/restnot-agent-hook.sh cursor stop" }
+    ]
+  }
+}

@@ -1,0 +1,85 @@
+#!/bin/bash
+#
+# restnot — generic activity-lease CLI for RestNot.
+#
+# Any tool (an AI agent's hooks, a build script, a cron job) can register that
+# it is actively working so RestNot keeps the Mac awake, then release when done.
+# RestNot holds a sleep assertion while any lease is unexpired.
+#
+#   restnot lease <id> [--ttl SECONDS]   register/refresh a lease (default TTL 900s)
+#   restnot release <id>                 remove a lease
+#   restnot list                         list active (unexpired) leases
+#
+# The TTL is a safety net: if the caller dies without releasing, the lease still
+# expires so the Mac is never stuck awake. Re-run `lease` periodically (or on
+# every event) to keep it alive while work continues.
+
+set -euo pipefail
+
+LEASE_DIR="${RESTNOT_LEASE_DIR:-${HOME}/.restnot/leases}"
+DEFAULT_TTL="${RESTNOT_BUSY_TTL:-900}"
+
+usage() {
+  cat >&2 <<'EOF'
+usage:
+  restnot lease <id> [--ttl seconds]   register/refresh an activity lease
+  restnot release <id>                 remove a lease
+  restnot list                         show active leases
+EOF
+  exit 2
+}
+
+sanitize() { printf '%s' "$1" | tr -cd 'A-Za-z0-9._-'; }
+
+write_lease() {
+  local id="$1" ttl="$2"
+  mkdir -p "$LEASE_DIR"
+  local tmp
+  tmp="$(mktemp "${LEASE_DIR}/.${id}.XXXXXX")"
+  printf '%s' "$(( $(date +%s) + ttl ))" > "$tmp"
+  mv -f "$tmp" "${LEASE_DIR}/${id}"
+}
+
+cmd="${1:-}"
+shift || true
+
+case "$cmd" in
+  lease)
+    id="$(sanitize "${1:-}")"
+    shift || true
+    [ -z "$id" ] && usage
+    ttl="$DEFAULT_TTL"
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --ttl) ttl="${2:-}"; shift 2 || true ;;
+        --ttl=*) ttl="${1#--ttl=}"; shift ;;
+        *) shift ;;
+      esac
+    done
+    case "$ttl" in ''|*[!0-9]*) ttl="$DEFAULT_TTL" ;; esac
+    write_lease "$id" "$ttl"
+    ;;
+  release)
+    id="$(sanitize "${1:-}")"
+    [ -z "$id" ] && usage
+    rm -f "${LEASE_DIR}/${id}"
+    ;;
+  list)
+    [ -d "$LEASE_DIR" ] || exit 0
+    now="$(date +%s)"
+    for f in "$LEASE_DIR"/*; do
+      [ -e "$f" ] || continue
+      exp="$(cat "$f" 2>/dev/null || true)"
+      case "$exp" in ''|*[!0-9]*) continue ;; esac
+      if [ "$exp" -gt "$now" ]; then
+        printf '%s\t%ss\n' "$(basename "$f")" "$(( exp - now ))"
+      fi
+    done
+    ;;
+  ''|-h|--help|help)
+    usage
+    ;;
+  *)
+    usage
+    ;;
+esac

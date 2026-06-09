@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 
 struct ActiveItem {
     let key: String
@@ -14,14 +15,40 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var graceTimer: Timer?
     private var activeItems: [ActiveItem] = []
     private var startTimes: [String: Date] = [:]
-    private var isPaused = false
+    private var isPaused = UserDefaults.standard.bool(forKey: "RestNotPaused")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         sleepManager = SleepManager()
         processWatcher = ProcessWatcher()
         leaseWatcher = LeaseWatcher()
+        enableLoginItemOnFirstLaunch()
         setupStatusItem()
         startPolling()
+    }
+
+    // MARK: - Login Item
+
+    private var loginItemEnabled: Bool {
+        SMAppService.mainApp.status == .enabled
+    }
+
+    private func setLoginItem(_ enabled: Bool) {
+        do {
+            if enabled {
+                if SMAppService.mainApp.status != .enabled { try SMAppService.mainApp.register() }
+            } else {
+                if SMAppService.mainApp.status == .enabled { try SMAppService.mainApp.unregister() }
+            }
+        } catch {
+            NSLog("RestNot: login item toggle failed — %@", error.localizedDescription)
+        }
+    }
+
+    private func enableLoginItemOnFirstLaunch() {
+        let key = "RestNotLoginItemConfigured"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        setLoginItem(true)
+        UserDefaults.standard.set(true, forKey: key)
     }
 
     // MARK: - Status Item
@@ -37,9 +64,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Polling
 
     private func startPolling() {
-        pollTimer = Timer.scheduledTimer(withTimeInterval: Config.pollInterval, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: Config.pollInterval, repeats: true) { [weak self] _ in
             self?.poll()
         }
+        RunLoop.main.add(timer, forMode: .common)
+        pollTimer = timer
         poll()
     }
 
@@ -80,11 +109,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             updateIcon(active: true)
         } else if sleepManager.isHolding {
             if graceTimer == nil {
-                graceTimer = Timer.scheduledTimer(withTimeInterval: Config.gracePeriod, repeats: false) { [weak self] _ in
+                let timer = Timer(timeInterval: Config.gracePeriod, repeats: false) { [weak self] _ in
                     self?.sleepManager.releaseAssertion()
                     self?.updateIcon(active: false)
                     self?.updateMenu()
                 }
+                RunLoop.main.add(timer, forMode: .common)
+                graceTimer = timer
             }
         }
 
@@ -135,6 +166,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         pauseItem.target = self
         menu.addItem(pauseItem)
 
+        let loginItem = NSMenuItem(title: "Open at Login", action: #selector(toggleLoginItem), keyEquivalent: "")
+        loginItem.target = self
+        loginItem.state = loginItemEnabled ? .on : .off
+        menu.addItem(loginItem)
+
         menu.addItem(NSMenuItem.separator())
 
         let quitItem = NSMenuItem(title: "Quit RestNot", action: #selector(quit), keyEquivalent: "q")
@@ -143,7 +179,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        let versionItem = NSMenuItem(title: "v0.1.0", action: nil, keyEquivalent: "")
+        let versionItem = NSMenuItem(title: "v0.2.0", action: nil, keyEquivalent: "")
         versionItem.isEnabled = false
         menu.addItem(versionItem)
 
@@ -168,6 +204,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func togglePause() {
         isPaused.toggle()
+        UserDefaults.standard.set(isPaused, forKey: "RestNotPaused")
         if isPaused {
             graceTimer?.invalidate()
             graceTimer = nil
@@ -176,6 +213,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             poll()
         }
+        updateMenu()
+    }
+
+    @objc private func toggleLoginItem() {
+        setLoginItem(!loginItemEnabled)
         updateMenu()
     }
 

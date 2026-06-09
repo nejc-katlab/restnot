@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "~/.restnot/adapters/restnot-agent-hook.sh codex busy" }] }
+    ],
+    "PreToolUse": [
+      { "hooks": [{ "type": "command", "command": "~/.restnot/adapters/restnot-agent-hook.sh codex busy" }] }
+    ],
+    "PostToolUse": [
+      { "hooks": [{ "type": "command", "command": "~/.restnot/adapters/restnot-agent-hook.sh codex busy" }] }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "~/.restnot/adapters/restnot-agent-hook.sh codex stop" }] }
+    ]
+  }
+}
